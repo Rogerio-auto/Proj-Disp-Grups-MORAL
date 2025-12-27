@@ -1,6 +1,11 @@
 node_modules
 dist
 .env
+.env.local
 uploads
 *.log
 .vscode
+.DS_Store
+backend/uploads/*
+!backend/uploads/.gitkeep
+
