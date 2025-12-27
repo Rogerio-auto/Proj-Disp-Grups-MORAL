@@ -4,22 +4,29 @@ import bcrypt from 'bcrypt';
 const prisma = new PrismaClient();
 
 async function main() {
+  const adminEmail = process.env.ADMIN_EMAIL || 'admin@sistema.com';
+  const adminPassword = process.env.ADMIN_PASSWORD || 'admin123';
+  const adminName = process.env.ADMIN_NAME || 'Administrador';
+
   // Criar usuário admin padrão
-  const senhaHash = await bcrypt.hash('admin123', 10);
+  const senhaHash = await bcrypt.hash(adminPassword, 10);
   
   const admin = await prisma.usuario.upsert({
-    where: { email: 'admin@sistema.com' },
-    update: {},
-    create: {
-      email: 'admin@sistema.com',
+    where: { email: adminEmail },
+    update: {
       senha_hash: senhaHash,
-      nome: 'Administrador',
+      nome: adminName
+    },
+    create: {
+      email: adminEmail,
+      senha_hash: senhaHash,
+      nome: adminName,
       papel: 'admin',
       ativo: true
     }
   });
   
-  console.log('Seed completo:', admin);
+  console.log('Seed completo. Usuário:', adminEmail);
 }
 
 main()

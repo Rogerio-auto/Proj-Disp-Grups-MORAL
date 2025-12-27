@@ -17,10 +17,12 @@ services:
 
   api:
     build: ./backend
-    image: rogerio-auto/disp-canais-api:latest
+    image: revianasolution/disp-canais-api:latest
     environment:
       DATABASE_URL: "postgresql://postgres:your_password_here@db:5432/campanhas_db?schema=public"
       JWT_SECRET: "seu_segredo_aqui"
+      ADMIN_EMAIL: "admin@sistema.com"
+      ADMIN_PASSWORD: "admin123"
       PORT: 3000
       NODE_ENV: production
     volumes:
@@ -36,7 +38,7 @@ services:
 
   web:
     build: ./frontend
-    image: rogerio-auto/disp-canais-web:latest
+    image: revianasolution/disp-canais-web:latest
     ports:
       - "80:80"
     networks:
