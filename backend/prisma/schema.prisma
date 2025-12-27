@@ -1,0 +1,220 @@
+// prisma/schema.prisma
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ============================================
+// AUTENTICAÇÃO E USUÁRIOS
+// ============================================
+
+model Usuario {
+  id            String    @id @default(uuid())
+  email         String    @unique
+  senha_hash    String
+  nome          String
+  papel         String    @default("user") // user, admin
+  ativo         Boolean   @default(true)
+  criado_em     DateTime  @default(now())
+  atualizado_em DateTime  @updatedAt
+  
+  // Relações
+  sessoes       Sessao[]
+  
+  @@map("usuarios")
+}
+
+model Sessao {
+  id            String    @id @default(uuid())
+  usuario_id    String
+  token         String    @unique
+  ip_address    String?
+  user_agent    String?
+  expira_em     DateTime
+  criado_em     DateTime  @default(now())
+  
+  // Relações
+  usuario       Usuario   @relation(fields: [usuario_id], references: [id], onDelete: Cascade)
+  
+  @@index([usuario_id])
+  @@index([token])
+  @@map("sessoes_ativas")
+}
+
+// ============================================
+// GRUPOS
+// ============================================
+
+model Grupo {
+  id                    String    @id @default(uuid())
+  grupo_id_zapi         String    @unique
+  nome                  String
+  foto_url              String?
+  descricao             String?
+  total_participantes   Int       @default(0)
+  sincronizado_em       DateTime  @default(now())
+  ativo                 Boolean   @default(true)
+  criado_em             DateTime  @default(now())
+  atualizado_em         DateTime  @updatedAt
+  
+  // Relações
+  campanhas_grupos      CampanhaGrupo[]
+  
+  @@index([ativo])
+  @@map("grupos")
+}
+
+// ============================================
+// MENSAGENS
+// ============================================
+
+model Mensagem {
+  id                  String    @id @default(uuid())
+  titulo              String
+  conteudo            String
+  conteudo_formatado  String?    // HTML ou Markdown
+  tem_midia           Boolean   @default(false)
+  criado_em           DateTime  @default(now())
+  atualizado_em       DateTime  @updatedAt
+  
+  // Relações
+  midias              Midia[]
+  campanhas           Campanha[]
+  
+  @@map("mensagens")
+}
+
+model Midia {
+  id              String    @id @default(uuid())
+  mensagem_id     String
+  tipo            String    // image, video, document, audio
+  nome_arquivo    String
+  url             String
+  tamanho_bytes   BigInt? 
+  mime_type       String?
+  criado_em       DateTime  @default(now())
+  
+  // Relações
+  mensagem        Mensagem  @relation(fields: [mensagem_id], references: [id], onDelete: Cascade)
+  
+  @@index([mensagem_id])
+  @@map("midias")
+}
+
+// ============================================
+// CAMPANHAS
+// ============================================
+
+model Campanha {
+  id                    String    @id @default(uuid())
+  nome                  String
+  mensagem_id           String? 
+  status                String    @default("rascunho") // rascunho, agendada, em_andamento, concluida, cancelada, pausada
+  total_grupos          Int       @default(0)
+  grupos_processados    Int       @default(0)
+  agendada_para         DateTime? 
+  iniciada_em           DateTime? 
+  concluida_em          DateTime?
+  tipo_disparo          String    @default("imediato") // imediato, agendado
+  intervalo_segundos    Int       @default(0)
+  prioridade            Int       @default(0)
+  criado_em             DateTime  @default(now())
+  atualizado_em         DateTime  @updatedAt
+  
+  // Relações
+  mensagem              Mensagem?       @relation(fields: [mensagem_id], references: [id], onDelete: SetNull)
+  campanhas_grupos      CampanhaGrupo[]
+  log_erros             LogErro[]
+  
+  @@index([status])
+  @@map("campanhas")
+}
+
+model CampanhaGrupo {
+  id              String    @id @default(uuid())
+  campanha_id     String
+  grupo_id        String
+  status          String    @default("pendente") // pendente, enviado, erro, agendado
+  erro_mensagem   String?
+  enviado_em      DateTime? 
+  criado_em       DateTime  @default(now())
+  
+  // Relações
+  campanha        Campanha  @relation(fields: [campanha_id], references: [id], onDelete:  Cascade)
+  grupo           Grupo     @relation(fields: [grupo_id], references: [id], onDelete: Cascade)
+  
+  @@unique([campanha_id, grupo_id])
+  @@index([campanha_id])
+  @@map("campanhas_grupos")
+}
+
+// ============================================
+// LOGS E ARQUIVOS
+// ============================================
+
+model LogErro {
+  id              String    @id @default(uuid())
+  campanha_id     String? 
+  tipo            String    // zapi, sistema, validacao
+  mensagem        String
+  stack_trace     String?
+  resolvido       Boolean   @default(false)
+  criado_em       DateTime  @default(now())
+  
+  // Relações
+  campanha        Campanha?  @relation(fields: [campanha_id], references: [id], onDelete: SetNull)
+  
+  @@index([campanha_id])
+  @@map("log_de_erros")
+}
+
+model Arquivo {
+  id                String    @id @default(uuid())
+  nome_original     String
+  nome_arquivo      String    @unique
+  caminho           String
+  tipo              String
+  tamanho_kb        Decimal   @db.Decimal(10, 2)
+  categoria         String    // midia_mensagem, anexo
+  criado_em         DateTime  @default(now())
+  
+  @@map("arquivos")
+}
+
+// ============================================
+// CONFIGURAÇÕES
+// ============================================
+
+model Configuracao {
+  id        String    @id @default(uuid())
+  chave     String    @unique
+  valor     String
+  descricao String?
+  categoria String    // zapi, sistema, email
+  
+  @@map("configuracoes_gerais")
+}
+
+// ============================================
+// ESTATÍSTICAS (para dashboard futuro)
+// ============================================
+
+model EstatisticaCampanha {
+  id                      String    @id @default(uuid())
+  campanha_id             String?    @unique
+  total_grupos            Int
+  total_sucessos          Int
+  total_erros             Int
+  total_pendentes         Int
+  taxa_sucesso            Decimal   @db.Decimal(5, 2)
+  tempo_medio_envio       Int?       // em segundos
+  data_inicio             DateTime?
+  data_fim                DateTime?
+  
+  @@map("estatisticas_campanhas")
+}
