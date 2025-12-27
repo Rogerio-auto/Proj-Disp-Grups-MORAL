@@ -2,11 +2,11 @@ FROM node:18-alpine
 
 WORKDIR /app
 
-# Instalar dependências necessárias para o Prisma e builds
-RUN apk add --no-cache openssl
+# Instalar dependências necessárias para o Prisma e compilação de módulos nativos (bcrypt)
+RUN apk add --no-cache openssl make gcc g++ python3
 
 COPY package*.json ./
-RUN npm install
+RUN npm install && npm rebuild bcrypt --build-from-source
 
 COPY . .
 
