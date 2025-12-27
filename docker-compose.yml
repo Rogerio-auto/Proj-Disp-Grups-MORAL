@@ -1,0 +1,53 @@
+version: '3.8'
+
+services:
+  db:
+    image: postgres:14-alpine
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: your_password_here
+      POSTGRES_DB: campanhas_db
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - app-network
+    deploy:
+      placement:
+        constraints: [node.role == manager]
+
+  api:
+    build: ./backend
+    image: rogerio-auto/disp-canais-api:latest
+    environment:
+      DATABASE_URL: "postgresql://postgres:your_password_here@db:5432/campanhas_db?schema=public"
+      JWT_SECRET: "seu_segredo_aqui"
+      PORT: 3000
+      NODE_ENV: production
+    volumes:
+      - uploads_data:/app/uploads
+    networks:
+      - app-network
+    depends_on:
+      - db
+    deploy:
+      replicas: 1
+      restart_policy:
+        condition: on-failure
+
+  web:
+    build: ./frontend
+    image: rogerio-auto/disp-canais-web:latest
+    ports:
+      - "80:80"
+    networks:
+      - app-network
+    deploy:
+      replicas: 1
+
+networks:
+  app-network:
+    driver: overlay
+
+volumes:
+  postgres_data:
+  uploads_data:
