@@ -9,6 +9,10 @@ services:
       JWT_SECRET: ${JWT_SECRET:-seu_segredo_aqui}
       ADMIN_EMAIL: ${ADMIN_EMAIL:-admin@sistema.com}
       ADMIN_PASSWORD: ${ADMIN_PASSWORD:-admin123}
+      ZAPI_INSTANCE_ID: ${ZAPI_INSTANCE_ID:-}
+      ZAPI_TOKEN: ${ZAPI_TOKEN:-}
+      ZAPI_CLIENT_TOKEN: ${ZAPI_CLIENT_TOKEN:-}
+      ZAPI_BASE_URL: ${ZAPI_BASE_URL:-https://api.z-api.io}
       PORT: 3002
       NODE_ENV: production
     volumes:
