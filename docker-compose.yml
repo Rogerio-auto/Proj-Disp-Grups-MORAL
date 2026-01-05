@@ -1,36 +1,22 @@
 version: '3.8'
 
 services:
-  db:
-    image: postgres:14-alpine
-    environment:
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: your_password_here
-      POSTGRES_DB: campanhas_db
-    volumes:
-      - postgres_data:/var/lib/postgresql/data
-    networks:
-      - app-network
-    deploy:
-      placement:
-        constraints: [node.role == manager]
-
   api:
     build: ./backend
     image: revianasolution/disp-canais-api:latest
     environment:
-      DATABASE_URL: "postgresql://postgres:your_password_here@db:5432/campanhas_db?schema=public"
-      JWT_SECRET: "seu_segredo_aqui"
-      ADMIN_EMAIL: "admin@sistema.com"
-      ADMIN_PASSWORD: "admin123"
+      DATABASE_URL: ${DATABASE_URL:-postgresql://postgres:your_password_here@host.docker.internal:5432/campanhas_db?schema=public}
+      JWT_SECRET: ${JWT_SECRET:-seu_segredo_aqui}
+      ADMIN_EMAIL: ${ADMIN_EMAIL:-admin@sistema.com}
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD:-admin123}
       PORT: 3002
       NODE_ENV: production
     volumes:
       - uploads_data:/app/uploads
     networks:
       - app-network
-    depends_on:
-      - db
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     deploy:
       replicas: 1
       restart_policy:
@@ -51,5 +37,4 @@ networks:
     driver: overlay
 
 volumes:
-  postgres_data:
   uploads_data:
