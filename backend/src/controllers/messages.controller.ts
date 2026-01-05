@@ -4,8 +4,19 @@ import { createMessageSchema } from '../utils/validators';
 
 export const createMessage = async (req: Request, res: Response) => {
   try {
-    const { titulo, conteudo, conteudo_formatado, tem_midia } = req.body;
+    const { titulo, conteudo, conteudo_formatado } = req.body;
     const file = req.file;
+
+    // Validação manual simples para evitar conflitos com o Zod e Multer
+    if (!titulo) {
+      return res.status(400).json({ success: false, message: 'O título é obrigatório' });
+    }
+
+    if (!conteudo && (!file || !file.mimetype.startsWith('audio/'))) {
+      if (!file) {
+        return res.status(400).json({ success: false, message: 'O conteúdo é obrigatório quando não há mídia' });
+      }
+    }
 
     const mensagem = await prisma.mensagem.create({
       data: {
