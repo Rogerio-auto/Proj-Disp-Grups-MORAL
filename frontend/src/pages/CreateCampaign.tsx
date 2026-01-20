@@ -26,6 +26,14 @@ const CreateCampaign: React.FC = () => {
   const [groups, setGroups] = useState<Group[]>([]);
   const [searchGroup, setSearchGroup] = useState('');
 
+  // Novo estado para criação de mensagem integrada
+  const [createMsgMode, setCreateMsgMode] = useState<'select' | 'new'>('select');
+  const [newMsgData, setNewMsgData] = useState({
+    titulo: '',
+    conteudo: '',
+    file: null as File | null
+  });
+
   const [formData, setFormData] = useState({
     nome: '',
     mensagem_id: '',
@@ -82,12 +90,39 @@ const CreateCampaign: React.FC = () => {
       return;
     }
 
+    if (createMsgMode === 'select' && !formData.mensagem_id) {
+      alert('Selecione uma mensagem salva ou crie uma nova.');
+      return;
+    }
+
+    if (createMsgMode === 'new' && !newMsgData.titulo) {
+      alert('Dê um título para a nova mensagem.');
+      return;
+    }
+
     try {
       setLoading(true);
-      if (isEditing) {
-        await api.put(`/campanhas/${id}`, formData);
+      
+      const submitData = new FormData();
+      submitData.append('nome', formData.nome);
+      submitData.append('grupos_ids', JSON.stringify(formData.grupos_ids));
+      submitData.append('intervalo_segundos', String(formData.intervalo_segundos));
+      submitData.append('tipo_disparo', formData.tipo_disparo);
+      if (formData.agendada_para) submitData.append('agendada_para', formData.agendada_para);
+
+      if (createMsgMode === 'new') {
+        submitData.append('criar_nova_mensagem', 'true');
+        submitData.append('msg_titulo', newMsgData.titulo);
+        submitData.append('msg_conteudo', newMsgData.conteudo);
+        if (newMsgData.file) submitData.append('file', newMsgData.file);
       } else {
-        await api.post('/campanhas', formData);
+        submitData.append('mensagem_id', formData.mensagem_id);
+      }
+
+      if (isEditing) {
+        await api.put(`/campanhas/${id}`, submitData);
+      } else {
+        await api.post('/campanhas', submitData);
       }
       navigate('/campanhas');
     } catch (error) {
@@ -162,19 +197,71 @@ const CreateCampaign: React.FC = () => {
               />
             </div>
 
-            <div className="space-y-2">
-              <label className="text-sm font-medium text-gray-700">Mensagem</label>
-              <select 
-                required
-                className="w-full p-2.5 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
-                value={formData.mensagem_id}
-                onChange={e => setFormData({...formData, mensagem_id: e.target.value})}
-              >
-                <option value="">Selecione uma mensagem...</option>
-                {messages.map(msg => (
-                  <option key={msg.id} value={msg.id}>{msg.titulo}</option>
-                ))}
-              </select>
+            <div className="space-y-4 pt-4 border-t">
+              <div className="flex items-center justify-between">
+                <label className="text-sm font-medium text-gray-700">Mensagem do Disparo</label>
+                <div className="flex bg-gray-100 p-1 rounded-lg">
+                  <button
+                    type="button"
+                    onClick={() => setCreateMsgMode('select')}
+                    className={`px-3 py-1 text-xs font-medium rounded-md transition-colors ${createMsgMode === 'select' ? 'bg-white shadow text-blue-600' : 'text-gray-500 hover:text-gray-700'}`}
+                  >
+                    Selecionar Salva
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setCreateMsgMode('new')}
+                    className={`px-3 py-1 text-xs font-medium rounded-md transition-colors ${createMsgMode === 'new' ? 'bg-white shadow text-blue-600' : 'text-gray-500 hover:text-gray-700'}`}
+                  >
+                    Criar Nova
+                  </button>
+                </div>
+              </div>
+
+              {createMsgMode === 'select' ? (
+                <select 
+                  required={createMsgMode === 'select'}
+                  className="w-full p-2.5 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
+                  value={formData.mensagem_id}
+                  onChange={e => setFormData({...formData, mensagem_id: e.target.value})}
+                >
+                  <option value="">Selecione uma mensagem...</option>
+                  {messages.map(msg => (
+                    <option key={msg.id} value={msg.id}>{msg.titulo}</option>
+                  ))}
+                </select>
+              ) : (
+                <div className="space-y-4 p-4 bg-gray-50 rounded-lg border border-dashed border-gray-300">
+                  <div className="space-y-2">
+                    <label className="text-xs font-semibold text-gray-600 uppercase">Título da Mensagem</label>
+                    <input 
+                      type="text"
+                      placeholder="Identificação interna da mensagem"
+                      className="w-full p-2 border rounded-md text-sm outline-none focus:border-blue-500"
+                      value={newMsgData.titulo}
+                      onChange={e => setNewMsgData({...newMsgData, titulo: e.target.value})}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-xs font-semibold text-gray-600 uppercase">Conteúdo (Texto)</label>
+                    <textarea 
+                      placeholder="Texto que será enviado no WhatsApp..."
+                      rows={4}
+                      className="w-full p-2 border rounded-md text-sm outline-none focus:border-blue-500 resize-none"
+                      value={newMsgData.conteudo}
+                      onChange={e => setNewMsgData({...newMsgData, conteudo: e.target.value})}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-xs font-semibold text-gray-600 uppercase">Anexo (Opcional)</label>
+                    <input 
+                      type="file"
+                      className="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
+                      onChange={e => setNewMsgData({...newMsgData, file: e.target.files?.[0] || null})}
+                    />
+                  </div>
+                </div>
+              )}
             </div>
           </div>
 

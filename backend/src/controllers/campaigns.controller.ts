@@ -3,9 +3,21 @@ import { prisma } from '../server';
 
 export const createCampaign = async (req: Request, res: Response) => {
   try {
-    const { nome, mensagem_id, grupos_ids, intervalo_segundos, agendada_para, tipo_disparo } = req.body;
+    const { 
+      nome, 
+      mensagem_id, 
+      grupos_ids, 
+      intervalo_segundos, 
+      agendada_para, 
+      tipo_disparo,
+      criar_nova_mensagem,
+      msg_titulo,
+      msg_conteudo
+    } = req.body;
+    
+    const file = req.file;
 
-    if (!nome || !mensagem_id || !grupos_ids || grupos_ids.length === 0) {
+    if (!nome || (!mensagem_id && !criar_nova_mensagem) || !grupos_ids || grupos_ids.length === 0) {
       return res.status(400).json({
         success: false,
         message: 'Nome, mensagem e pelo menos um grupo são obrigatórios.'
@@ -14,19 +26,43 @@ export const createCampaign = async (req: Request, res: Response) => {
 
     // Criar a campanha e as relações com os grupos em uma transação
     const campanha = await prisma.$transaction(async (tx) => {
+      let final_mensagem_id = mensagem_id;
+
+      // Se for para criar uma nova mensagem
+      if (criar_nova_mensagem === 'true' || criar_nova_mensagem === true) {
+        const novaMensagem = await tx.mensagem.create({
+          data: {
+            titulo: msg_titulo || `Mensagem - ${nome}`,
+            conteudo: msg_conteudo || '',
+            tem_midia: !!file,
+            midias: file ? {
+              create: {
+                tipo: file.mimetype.split('/')[0],
+                nome_arquivo: file.originalname,
+                url: `/uploads/${file.filename}`,
+                mime_type: file.mimetype,
+                tamanho_bytes: BigInt(file.size)
+              }
+            } : undefined
+          }
+        });
+        final_mensagem_id = novaMensagem.id;
+      }
+
       const newCampaign = await tx.campanha.create({
         data: {
           nome,
-          mensagem_id,
+          mensagem_id: final_mensagem_id,
           intervalo_segundos: Number(intervalo_segundos) || 0,
           agendada_para: agendada_para ? new Date(agendada_para) : null,
           tipo_disparo: tipo_disparo || 'imediato',
           status: 'rascunho',
-          total_grupos: grupos_ids.length,
+          total_grupos: (typeof grupos_ids === 'string' ? JSON.parse(grupos_ids) : grupos_ids).length,
         }
       });
 
-      const campanhaGruposData = grupos_ids.map((grupoId: string) => ({
+      const parsedGruposIds = typeof grupos_ids === 'string' ? JSON.parse(grupos_ids) : grupos_ids;
+      const campanhaGruposData = parsedGruposIds.map((grupoId: string) => ({
         campanha_id: newCampaign.id,
         grupo_id: grupoId,
         status: 'pendente'
