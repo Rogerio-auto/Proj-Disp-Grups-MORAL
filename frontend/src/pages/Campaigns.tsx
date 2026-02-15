@@ -13,9 +13,11 @@ interface Campaign {
   grupos_processados: number;
   agendada_para: string | null;
   criado_em: string;
-  mensagem: {
-    titulo: string;
-  };
+  campanhas_mensagens: {
+    mensagem: {
+      titulo: string;
+    };
+  }[];
 }
 
 const Campaigns: React.FC = () => {
@@ -65,14 +67,14 @@ const Campaigns: React.FC = () => {
 
   return (
     <div className="space-y-6">
-      <div className="flex justify-between items-center">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
           <h1 className="text-2xl font-bold text-gray-800">Campanhas</h1>
           <p className="text-sm text-gray-500">Gerencie e acompanhe seus disparos para grupos</p>
         </div>
         <Link 
           to="/campanhas/nova"
-          className="bg-blue-600 text-white px-4 py-2 rounded-lg flex items-center gap-2 hover:bg-blue-700 transition-colors"
+          className="w-full sm:w-auto bg-blue-600 text-white px-4 py-2 rounded-lg flex items-center justify-center gap-2 hover:bg-blue-700 transition-colors"
         >
           <Plus size={20} />
           Nova Campanha
@@ -106,7 +108,13 @@ const Campaigns: React.FC = () => {
                   <div>
                     <h3 className="font-bold text-gray-900 text-lg line-clamp-1">{campaign.nome}</h3>
                     <p className="text-sm text-gray-500 flex items-center gap-1 mt-1">
-                      <Eye size={14} /> {campaign.mensagem.titulo}
+                      <Eye size={14} /> 
+                      {campaign.campanhas_mensagens?.[0]?.mensagem?.titulo || 'Sem mensagem'}
+                      {campaign.campanhas_mensagens?.length > 1 && (
+                        <span className="text-[10px] bg-blue-50 text-blue-600 px-1 rounded ml-1">
+                          +{campaign.campanhas_mensagens.length - 1} rascunhos
+                        </span>
+                      )}
                     </p>
                   </div>
                   {getStatusBadge(campaign.status)}

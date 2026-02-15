@@ -71,7 +71,10 @@ const Dashboard: React.FC = () => {
                   }`} />
                   <div>
                     <p className="font-medium text-gray-800">{item.nome}</p>
-                    <p className="text-xs text-gray-500">Mensagem: {item.mensagem?.titulo}</p>
+                    <p className="text-xs text-gray-500">
+                      Mensagem: {item.campanhas_mensagens?.[0]?.mensagem?.titulo || 'Nenhuma'}
+                      {item.campanhas_mensagens?.length > 1 && ` (+${item.campanhas_mensagens.length - 1} rascunhos)`}
+                    </p>
                   </div>
                 </div>
                 <div className="text-right">

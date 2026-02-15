@@ -9,8 +9,8 @@ router.use(authenticate);
 
 router.get('/', campaignsController.getCampaigns);
 router.get('/:id', campaignsController.getCampaignDetails);
-router.post('/', upload.single('file'), campaignsController.createCampaign);
-router.put('/:id', upload.single('file'), campaignsController.updateCampaign);
+router.post('/', upload.any(), campaignsController.createCampaign);
+router.put('/:id', upload.any(), campaignsController.updateCampaign);
 router.patch('/:id/status', campaignsController.updateCampaignStatus);
 router.delete('/:id', campaignsController.deleteCampaign);
 

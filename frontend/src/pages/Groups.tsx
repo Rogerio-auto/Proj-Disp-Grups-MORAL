@@ -59,7 +59,7 @@ const Groups: React.FC = () => {
 
   return (
     <div className="space-y-6">
-      <div className="flex justify-between items-center">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
           <h1 className="text-2xl font-bold text-gray-800">Grupos</h1>
           <p className="text-sm text-gray-500">Gerencie os grupos do WhatsApp sincronizados via Z-API</p>
@@ -67,7 +67,7 @@ const Groups: React.FC = () => {
         <button 
           onClick={handleSync}
           disabled={syncing}
-          className={`bg-blue-600 text-white px-4 py-2 rounded-lg flex items-center gap-2 hover:bg-blue-700 transition-colors ${syncing ? 'opacity-50 cursor-not-allowed' : ''}`}
+          className={`w-full sm:w-auto bg-blue-600 text-white px-4 py-2 rounded-lg flex items-center justify-center gap-2 hover:bg-blue-700 transition-colors ${syncing ? 'opacity-50 cursor-not-allowed' : ''}`}
         >
           <RefreshCw size={20} className={syncing ? 'animate-spin' : ''} />
           {syncing ? 'Sincronizando...' : 'Sincronizar Grupos'}
@@ -75,7 +75,7 @@ const Groups: React.FC = () => {
       </div>
 
       <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
-        <div className="p-4 border-b bg-gray-50 flex items-center gap-4">
+        <div className="p-4 border-b bg-gray-50 flex flex-col sm:flex-row items-stretch sm:items-center gap-4">
           <div className="relative flex-1">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
             <input 
@@ -95,7 +95,8 @@ const Groups: React.FC = () => {
           </button>
         </div>
 
-        <div className="overflow-x-auto">
+        {/* Desktop Table */}
+        <div className="hidden md:block overflow-x-auto">
           <table className="w-full text-left">
             <thead className="bg-gray-50 border-b text-gray-600 text-sm uppercase font-semibold">
               <tr>
@@ -125,7 +126,9 @@ const Groups: React.FC = () => {
                         )}
                         <div>
                           <p className="font-semibold text-gray-800">{group.nome}</p>
-                          <p className="text-xs text-gray-400 font-mono">{group.grupo_id_zapi}</p>
+                          <p className="text-xs text-gray-400 font-mono">
+                            {group.grupo_id_zapi.replace('@g.us', '').replace('-group', '')}
+                          </p>
                         </div>
                       </div>
                     </td>
@@ -159,6 +162,59 @@ const Groups: React.FC = () => {
               )}
             </tbody>
           </table>
+        </div>
+
+        {/* Mobile Cards */}
+        <div className="md:hidden divide-y">
+          {loading ? (
+            <div className="px-6 py-8 text-center text-gray-500">Carregando grupos...</div>
+          ) : groups.length === 0 ? (
+            <div className="px-6 py-8 text-center text-gray-500">Nenhum grupo encontrado. Clique em sincronizar.</div>
+          ) : (
+            groups.map((group) => (
+              <div key={group.id} className="p-4 space-y-4">
+                <div className="flex items-center gap-3">
+                  {group.foto_url ? (
+                    <img src={group.foto_url} alt={group.nome} className="w-12 h-12 rounded-full object-cover border" />
+                  ) : (
+                    <div className="w-12 h-12 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center">
+                      <Users size={24} />
+                    </div>
+                  )}
+                  <div className="flex-1 min-w-0">
+                    <p className="font-semibold text-gray-800 truncate">{group.nome}</p>
+                    <p className="text-xs text-gray-400 font-mono truncate">
+                      {group.grupo_id_zapi.replace('@g.us', '').replace('-group', '')}
+                    </p>
+                  </div>
+                  <div className="shrink-0">
+                    {group.ativo ? (
+                      <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-medium bg-green-100 text-green-800">
+                        Ativo
+                      </span>
+                    ) : (
+                      <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-medium bg-red-100 text-red-800">
+                        Inativo
+                      </span>
+                    )}
+                  </div>
+                </div>
+                
+                <div className="flex items-center justify-between text-sm">
+                  <span className="text-gray-500">{group.total_participantes} membros</span>
+                  <button 
+                    onClick={() => toggleStatus(group.id, group.ativo)}
+                    className={`font-medium ${group.ativo ? 'text-red-600' : 'text-green-600'}`}
+                  >
+                    {group.ativo ? 'Desativar' : 'Ativar'}
+                  </button>
+                </div>
+                <p className="text-[10px] text-gray-400 text-right">
+                  Sinc: {new Date(group.sincronizado_em).toLocaleString('pt-BR')}
+                </p>
+              </div>
+            )
+          ))}
         </div>
       </div>
     </div>

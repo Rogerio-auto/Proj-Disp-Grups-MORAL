@@ -24,10 +24,11 @@ export const createMessageSchema = z.object({
 // Campanhas
 export const createCampaignSchema = z.object({
   nome: z.string().min(1).max(255),
-  mensagem_id: z.string().uuid(),
+  mensagem_id: z.string().uuid().optional(),
+  mensagens_ids: z.array(z.string().uuid()).optional(),
   grupos_ids: z.array(z.string().uuid()).min(1, "Selecione ao menos um grupo"),
   tipo_disparo: z.enum(['imediato', 'agendado']).default('imediato'),
-  agendada_para: z.string().datetime().optional(),
+  agendada_para: z.string().optional(),
   intervalo_segundos: z.number().min(0).default(0)
 });
 

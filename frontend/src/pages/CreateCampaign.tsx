@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { Save, ArrowLeft, Search, Check, Users, MessageSquare, Clock } from 'lucide-react';
+import { Save, ArrowLeft, Search, Check, Users, MessageSquare, Clock, PlusCircle, Trash2 } from 'lucide-react';
 import api from '../services/api';
 
 interface Message {
@@ -28,15 +28,14 @@ const CreateCampaign: React.FC = () => {
 
   // Novo estado para criação de mensagem integrada
   const [createMsgMode, setCreateMsgMode] = useState<'select' | 'new'>('select');
-  const [newMsgData, setNewMsgData] = useState({
-    titulo: '',
-    conteudo: '',
-    file: null as File | null
-  });
+  const [newMessages, setNewMessages] = useState<Array<{ titulo: string, conteudo: string, file: File | null }>>([
+    { titulo: '', conteudo: '', file: null }
+  ]);
 
   const [formData, setFormData] = useState({
     nome: '',
     mensagem_id: '',
+    mensagens_ids: [] as string[],
     grupos_ids: [] as string[],
     intervalo_segundos: 30,
     tipo_disparo: 'imediato',
@@ -69,7 +68,8 @@ const CreateCampaign: React.FC = () => {
       const campaign = response.data.data;
       setFormData({
         nome: campaign.nome,
-        mensagem_id: campaign.mensagem_id,
+        mensagem_id: campaign.mensagem_id || '',
+        mensagens_ids: campaign.campanhas_mensagens?.map((cm: any) => cm.mensagem_id) || (campaign.mensagem_id ? [campaign.mensagem_id] : []),
         grupos_ids: campaign.campanhas_grupos.map((cg: any) => cg.grupo_id),
         intervalo_segundos: campaign.intervalo_segundos,
         tipo_disparo: campaign.tipo_disparo,
@@ -90,14 +90,17 @@ const CreateCampaign: React.FC = () => {
       return;
     }
 
-    if (createMsgMode === 'select' && !formData.mensagem_id) {
-      alert('Selecione uma mensagem salva ou crie uma nova.');
+    if (createMsgMode === 'select' && formData.mensagens_ids.length === 0) {
+      alert('Selecione pelo menos uma mensagem salva ou crie uma nova.');
       return;
     }
 
-    if (createMsgMode === 'new' && !newMsgData.titulo) {
-      alert('Dê um título para a nova mensagem.');
-      return;
+    if (createMsgMode === 'new') {
+      const emptyMsg = newMessages.find(m => !m.titulo);
+      if (emptyMsg) {
+        alert('Dê um título para todas as novas mensagens.');
+        return;
+      }
     }
 
     try {
@@ -112,11 +115,23 @@ const CreateCampaign: React.FC = () => {
 
       if (createMsgMode === 'new') {
         submitData.append('criar_nova_mensagem', 'true');
-        submitData.append('msg_titulo', newMsgData.titulo);
-        submitData.append('msg_conteudo', newMsgData.conteudo);
-        if (newMsgData.file) submitData.append('file', newMsgData.file);
+        // Envia as mensagens como JSON (exceto os arquivos)
+        const msgsMeta = newMessages.map(m => ({ titulo: m.titulo, conteudo: m.conteudo }));
+        submitData.append('novas_mensagens', JSON.stringify(msgsMeta));
+        
+        // Envia os arquivos separadamente com uma convenção de nomes
+        newMessages.forEach((m, idx) => {
+          if (m.file) {
+            submitData.append(`file_${idx}`, m.file);
+          }
+        });
+
+        // Se houver outras mensagens selecionadas além da nova
+        if (formData.mensagens_ids.length > 0) {
+          submitData.append('mensagens_ids', JSON.stringify(formData.mensagens_ids));
+        }
       } else {
-        submitData.append('mensagem_id', formData.mensagem_id);
+        submitData.append('mensagens_ids', JSON.stringify(formData.mensagens_ids));
       }
 
       if (isEditing) {
@@ -159,15 +174,15 @@ const CreateCampaign: React.FC = () => {
 
   return (
     <div className="max-w-5xl mx-auto space-y-6">
-      <div className="flex items-center gap-4">
-        <button onClick={() => navigate(-1)} className="p-2 hover:bg-gray-100 rounded-full transition-colors">
-          <ArrowLeft size={24} />
+      <div className="flex items-center gap-2 sm:gap-4">
+        <button onClick={() => navigate(-1)} className="p-1.5 sm:p-2 hover:bg-gray-100 rounded-full transition-colors">
+          <ArrowLeft size={20} className="sm:size-6" />
         </button>
         <div>
-          <h1 className="text-2xl font-bold text-gray-800">
+          <h1 className="text-xl sm:text-2xl font-bold text-gray-800">
             {isEditing ? 'Editar Campanha' : 'Nova Campanha'}
           </h1>
-          <p className="text-sm text-gray-500">
+          <p className="text-xs sm:text-sm text-gray-500">
             {isEditing ? 'Atualize os dados da sua campanha' : 'Configure o disparo de mensagens para seus grupos'}
           </p>
         </div>
@@ -199,14 +214,17 @@ const CreateCampaign: React.FC = () => {
 
             <div className="space-y-4 pt-4 border-t">
               <div className="flex items-center justify-between">
-                <label className="text-sm font-medium text-gray-700">Mensagem do Disparo</label>
+                <div>
+                  <label className="text-sm font-medium text-gray-700">Mensagens do Disparo</label>
+                  <p className="text-[10px] text-gray-400">Adicione até 3 mensagens para rodízio (Anti-ban)</p>
+                </div>
                 <div className="flex bg-gray-100 p-1 rounded-lg">
                   <button
                     type="button"
                     onClick={() => setCreateMsgMode('select')}
                     className={`px-3 py-1 text-xs font-medium rounded-md transition-colors ${createMsgMode === 'select' ? 'bg-white shadow text-blue-600' : 'text-gray-500 hover:text-gray-700'}`}
                   >
-                    Selecionar Salva
+                    Selecionar Salvas
                   </button>
                   <button
                     type="button"
@@ -219,47 +237,132 @@ const CreateCampaign: React.FC = () => {
               </div>
 
               {createMsgMode === 'select' ? (
-                <select 
-                  required={createMsgMode === 'select'}
-                  className="w-full p-2.5 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
-                  value={formData.mensagem_id}
-                  onChange={e => setFormData({...formData, mensagem_id: e.target.value})}
-                >
-                  <option value="">Selecione uma mensagem...</option>
-                  {messages.map(msg => (
-                    <option key={msg.id} value={msg.id}>{msg.titulo}</option>
+                <div className="space-y-3">
+                  {formData.mensagens_ids.map((selectedId, index) => (
+                    <div key={index} className="flex gap-2">
+                      <select 
+                        required={createMsgMode === 'select'}
+                        className="flex-1 p-2.5 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-sm"
+                        value={selectedId}
+                        onChange={e => {
+                          const newIds = [...formData.mensagens_ids];
+                          newIds[index] = e.target.value;
+                          setFormData({...formData, mensagens_ids: newIds});
+                        }}
+                      >
+                        <option value="">Selecione uma mensagem...</option>
+                        {messages.map(msg => (
+                          <option key={msg.id} value={msg.id} disabled={formData.mensagens_ids.includes(msg.id) && msg.id !== selectedId}>
+                            {msg.titulo}
+                          </option>
+                        ))}
+                      </select>
+                      <button 
+                        type="button"
+                        onClick={() => {
+                          const newIds = formData.mensagens_ids.filter((_, i) => i !== index);
+                          setFormData({...formData, mensagens_ids: newIds});
+                        }}
+                        className="p-2.5 text-red-500 hover:bg-red-50 rounded-lg border border-red-100 transition-colors"
+                      >
+                        <Trash2 size={18} />
+                      </button>
+                    </div>
                   ))}
-                </select>
+                  
+                  {formData.mensagens_ids.length < 3 && (
+                    <button 
+                      type="button"
+                      onClick={() => setFormData({...formData, mensagens_ids: [...formData.mensagens_ids, '']})}
+                      className="w-full py-2 border-2 border-dashed border-gray-200 rounded-lg text-gray-400 hover:text-blue-500 hover:border-blue-200 transition-all flex items-center justify-center gap-2 text-sm font-medium"
+                    >
+                      <PlusCircle size={18} />
+                      Adicionar Slot de Mensagem
+                    </button>
+                  )}
+                  
+                  {formData.mensagens_ids.length === 0 && (
+                    <p className="text-center text-sm text-gray-400 py-4 bg-gray-50 rounded-lg border border-dashed border-gray-200">
+                      Nenhuma mensagem selecionada. Clique no botão acima para adicionar.
+                    </p>
+                  )}
+                </div>
               ) : (
-                <div className="space-y-4 p-4 bg-gray-50 rounded-lg border border-dashed border-gray-300">
-                  <div className="space-y-2">
-                    <label className="text-xs font-semibold text-gray-600 uppercase">Título da Mensagem</label>
-                    <input 
-                      type="text"
-                      placeholder="Identificação interna da mensagem"
-                      className="w-full p-2 border rounded-md text-sm outline-none focus:border-blue-500"
-                      value={newMsgData.titulo}
-                      onChange={e => setNewMsgData({...newMsgData, titulo: e.target.value})}
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <label className="text-xs font-semibold text-gray-600 uppercase">Conteúdo (Texto)</label>
-                    <textarea 
-                      placeholder="Texto que será enviado no WhatsApp..."
-                      rows={4}
-                      className="w-full p-2 border rounded-md text-sm outline-none focus:border-blue-500 resize-none"
-                      value={newMsgData.conteudo}
-                      onChange={e => setNewMsgData({...newMsgData, conteudo: e.target.value})}
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <label className="text-xs font-semibold text-gray-600 uppercase">Anexo (Opcional)</label>
-                    <input 
-                      type="file"
-                      className="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
-                      onChange={e => setNewMsgData({...newMsgData, file: e.target.files?.[0] || null})}
-                    />
-                  </div>
+                <div className="space-y-6">
+                  {newMessages.map((msg, idx) => (
+                    <div key={idx} className="space-y-4 p-4 bg-gray-50 rounded-lg border border-dashed border-gray-300 relative">
+                      {newMessages.length > 1 && (
+                        <button 
+                          type="button"
+                          onClick={() => setNewMessages(prev => prev.filter((_, i) => i !== idx))}
+                          className="absolute top-2 right-2 p-1 text-red-500 hover:bg-red-50 rounded"
+                        >
+                          <Trash2 size={16} />
+                        </button>
+                      )}
+                      
+                      <div className="space-y-2">
+                        <label className="text-xs font-semibold text-gray-600 uppercase">Título da Mensagem {idx + 1}</label>
+                        <input 
+                          type="text"
+                          placeholder="Identificação interna da mensagem"
+                          className="w-full p-2 border rounded-md text-sm outline-none focus:border-blue-500"
+                          value={msg.titulo}
+                          onChange={e => {
+                            const newMsgs = [...newMessages];
+                            newMsgs[idx].titulo = e.target.value;
+                            setNewMessages(newMsgs);
+                          }}
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <label className="text-xs font-semibold text-gray-600 uppercase">Conteúdo (Texto)</label>
+                        <textarea 
+                          placeholder="Texto que será enviado no WhatsApp..."
+                          rows={4}
+                          className="w-full p-2 border rounded-md text-sm outline-none focus:border-blue-500 resize-none"
+                          value={msg.conteudo}
+                          onChange={e => {
+                            const newMsgs = [...newMessages];
+                            newMsgs[idx].conteudo = e.target.value;
+                            setNewMessages(newMsgs);
+                          }}
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <label className="text-xs font-semibold text-gray-600 uppercase">Anexo (Opcional)</label>
+                        <input 
+                          type="file"
+                          className="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
+                          onChange={e => {
+                            const newMsgs = [...newMessages];
+                            newMsgs[idx].file = e.target.files?.[0] || null;
+                            setNewMessages(newMsgs);
+                          }}
+                        />
+                      </div>
+                    </div>
+                  ))}
+
+                  {newMessages.length < 3 && (
+                    <button 
+                      type="button"
+                      onClick={() => setNewMessages(prev => [...prev, { titulo: '', conteudo: '', file: null }])}
+                      className="w-full py-2 border-2 border-dashed border-gray-200 rounded-lg text-gray-400 hover:text-blue-500 hover:border-blue-200 transition-all flex items-center justify-center gap-2 text-sm font-medium"
+                    >
+                      <PlusCircle size={18} />
+                      Adicionar Outra Mensagem Nova
+                    </button>
+                  )}
+
+                  {formData.mensagens_ids.length > 0 && (
+                    <div className="p-2 bg-blue-50 rounded border border-blue-100">
+                      <p className="text-[11px] text-blue-700">
+                        <Check size={12} className="inline mr-1" />
+                        Estas novas mensagens serão adicionadas às <strong>{formData.mensagens_ids.length}</strong> mensagens já selecionadas.
+                      </p>
+                    </div>
+                  )}
                 </div>
               )}
             </div>

@@ -52,11 +52,11 @@ const Settings: React.FC = () => {
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
         {/* Sidebar de Navegação Interna */}
-        <div className="space-y-1">
-          <button className="w-full flex items-center gap-3 px-4 py-2 rounded-lg bg-blue-50 text-blue-600 font-medium">
+        <div className="flex overflow-x-auto md:flex-col gap-2 pb-4 md:pb-0 scrollbar-hide">
+          <button className="flex-1 md:flex-none flex items-center justify-center md:justify-start gap-3 px-4 py-2 rounded-lg bg-blue-50 text-blue-600 font-medium whitespace-nowrap">
             <Shield size={18} /> Segurança
           </button>
-          <button className="w-full flex items-center gap-3 px-4 py-2 rounded-lg text-gray-600 hover:bg-gray-50 font-medium">
+          <button className="flex-1 md:flex-none flex items-center justify-center md:justify-start gap-3 px-4 py-2 rounded-lg text-gray-600 hover:bg-gray-50 font-medium whitespace-nowrap">
             <Smartphone size={18} /> Z-API
           </button>
         </div>

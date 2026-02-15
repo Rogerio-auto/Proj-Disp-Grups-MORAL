@@ -15,7 +15,11 @@ export const getStats = async (req: Request, res: Response) => {
       take: 5,
       orderBy: { atualizado_em: 'desc' },
       include: {
-        mensagem: { select: { titulo: true } }
+        campanhas_mensagens: {
+          include: {
+            mensagem: { select: { titulo: true } }
+          }
+        }
       }
     });
 

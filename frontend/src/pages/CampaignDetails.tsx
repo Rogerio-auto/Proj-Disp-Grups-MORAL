@@ -13,11 +13,13 @@ interface CampaignDetail {
   intervalo_segundos: number;
   agendada_para: string | null;
   criado_em: string;
-  mensagem_id: string;
-  mensagem: {
-    titulo: string;
-    conteudo: string;
-  };
+  campanhas_mensagens: {
+    mensagem: {
+      id: string;
+      titulo: string;
+      conteudo: string;
+    }
+  }[];
   campanhas_grupos: {
     id: string;
     status: string;
@@ -80,29 +82,29 @@ const CampaignDetails: React.FC = () => {
   if (!campaign) return null;
 
   return (
-    <div className="max-w-5xl mx-auto space-y-6">
-      <div className="flex justify-between items-center">
-        <div className="flex items-center gap-4">
-          <button onClick={() => navigate('/campanhas')} className="p-2 hover:bg-gray-100 rounded-full transition-colors">
-            <ArrowLeft size={24} />
+    <div className="max-w-5xl mx-auto space-y-6 px-1">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+        <div className="flex items-center gap-2 sm:gap-4">
+          <button onClick={() => navigate('/campanhas')} className="p-1.5 sm:p-2 hover:bg-gray-100 rounded-full transition-colors">
+            <ArrowLeft size={20} className="sm:size-6" />
           </button>
           <div>
-            <h1 className="text-2xl font-bold text-gray-800">{campaign.nome}</h1>
-            <p className="text-sm text-gray-500">Gerenciamento do registro da campanha</p>
+            <h1 className="text-xl sm:text-2xl font-bold text-gray-800 truncate max-w-[200px] sm:max-w-none">{campaign.nome}</h1>
+            <p className="text-xs sm:text-sm text-gray-500">Gerenciamento do registro da campanha</p>
           </div>
         </div>
         
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 w-full sm:w-auto">
           <Link 
             to={`/campanhas/editar/${campaign.id}`}
-            className="p-2 text-gray-600 hover:bg-gray-100 rounded-lg transition-colors flex items-center gap-2 border"
+            className="flex-1 sm:flex-none p-2 text-gray-600 hover:bg-gray-100 rounded-lg transition-colors flex items-center justify-center gap-2 border"
           >
             <Edit size={18} />
             <span className="text-sm font-medium">Editar</span>
           </Link>
           <button 
             onClick={handleDelete}
-            className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors flex items-center gap-2 border border-red-100"
+            className="flex-1 sm:flex-none p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors flex items-center justify-center gap-2 border border-red-100"
           >
             <Trash2 size={18} />
             <span className="text-sm font-medium">Excluir</span>
@@ -114,7 +116,7 @@ const CampaignDetails: React.FC = () => {
         {/* Coluna Principal */}
         <div className="lg:col-span-2 space-y-6">
           {/* Status e Ações Rápidas */}
-          <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 flex items-center justify-between">
+          <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
             <div className="flex items-center gap-4">
               <div className="text-sm text-gray-500">Status Atual:</div>
               <span className={`px-3 py-1 rounded-full text-xs font-bold uppercase ${
@@ -126,34 +128,34 @@ const CampaignDetails: React.FC = () => {
               </span>
             </div>
             
-            <div className="flex gap-2">
+            <div className="flex gap-2 w-full sm:w-auto">
               {campaign.status === 'rascunho' && (
                 <button 
                   onClick={() => handleStatusChange('em_andamento')}
                   disabled={updating}
-                  className="bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-bold flex items-center gap-2 hover:bg-blue-700 disabled:opacity-50"
+                  className="w-full sm:w-auto bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-bold flex items-center justify-center gap-2 hover:bg-blue-700 disabled:opacity-50"
                 >
                   <PlayCircle size={18} />
-                  Ativar Campanha
+                  Ativar
                 </button>
               )}
               {campaign.status === 'em_andamento' && (
                 <button 
                   onClick={() => handleStatusChange('concluida')}
                   disabled={updating}
-                  className="bg-green-600 text-white px-4 py-2 rounded-lg text-sm font-bold flex items-center gap-2 hover:bg-green-700 disabled:opacity-50"
+                  className="w-full sm:w-auto bg-green-600 text-white px-4 py-2 rounded-lg text-sm font-bold flex items-center justify-center gap-2 hover:bg-green-700 disabled:opacity-50"
                 >
                   <CheckCircle2 size={18} />
-                  Marcar como Concluída
+                  Concluir
                 </button>
               )}
               {(campaign.status === 'em_andamento' || campaign.status === 'concluida') && (
                 <button 
                   onClick={() => handleStatusChange('rascunho')}
                   disabled={updating}
-                  className="text-gray-600 border px-4 py-2 rounded-lg text-sm font-bold hover:bg-gray-50 disabled:opacity-50"
+                  className="w-full sm:w-auto text-gray-600 border px-4 py-2 rounded-lg text-sm font-bold hover:bg-gray-50 disabled:opacity-50 text-center"
                 >
-                  Voltar para Rascunho
+                  Rascunho
                 </button>
               )}
             </div>
@@ -162,13 +164,25 @@ const CampaignDetails: React.FC = () => {
           <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
             <h2 className="text-lg font-semibold mb-4 flex items-center gap-2">
               <MessageSquare size={20} className="text-blue-600" />
-              Mensagem Selecionada
+              Mensagens do Rodízio ({campaign.campanhas_mensagens.length})
             </h2>
-            <div className="bg-gray-50 p-4 rounded-lg border">
-              <h3 className="font-bold text-gray-800 mb-2">{campaign.mensagem.titulo}</h3>
-              <div className="text-gray-600 whitespace-pre-wrap text-sm">
-                {campaign.mensagem.conteudo}
-              </div>
+            <div className="space-y-4">
+              {campaign.campanhas_mensagens.length > 0 ? (
+                campaign.campanhas_mensagens.map((cm, idx) => (
+                  <div key={cm.mensagem.id} className="bg-gray-50 p-4 rounded-lg border">
+                    <div className="flex justify-between items-start mb-2">
+                      <h3 className="font-bold text-gray-800">Msg #{idx + 1}: {cm.mensagem.titulo}</h3>
+                    </div>
+                    <div className="text-gray-600 whitespace-pre-wrap text-sm">
+                      {cm.mensagem.conteudo}
+                    </div>
+                  </div>
+                ))
+              ) : (
+                <div className="bg-gray-50 p-4 rounded-lg border text-center text-gray-500 text-sm">
+                  Esta campanha não possui mensagens vinculadas.
+                </div>
+              )}
             </div>
           </div>
 

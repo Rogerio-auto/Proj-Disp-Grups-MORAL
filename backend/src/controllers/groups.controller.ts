@@ -13,34 +13,73 @@ export const syncGroups = async (req: Request, res: Response) => {
       });
     }
 
-    // Sincronizar cada grupo no banco de dados
-    const syncPromises = groups
-      .filter(group => group.phone || group.id) // Garante que o grupo tem um ID
-      .map(group => {
-        const groupId = group.phone || group.id;
-        
-        return prisma.grupo.upsert({
+    // 1. Identificar IDs que vieram da API e filtrar apenas os que terminam com -group ou @g.us
+    // Usamos um Map para garantir unicidade pelo ID antes de processar
+    const uniqueGroupsMap = new Map();
+
+    groups.forEach(group => {
+      const id = group.id || group.phone;
+      if (id && (id.endsWith('-group') || id.endsWith('@g.us'))) {
+        uniqueGroupsMap.set(id, group);
+      }
+    });
+
+    const filteredGroups = Array.from(uniqueGroupsMap.values());
+    const zapiGroupIds = Array.from(uniqueGroupsMap.keys());
+
+    // 2. Marcar como "ativos" apenas os grupos filtrados e atualizar dados
+    // Usamos Promise.all com a lista deduplicada para performance
+    console.log(`Iniciando sincronização de ${filteredGroups.length} grupos únicos...`);
+    
+    const syncPromises = filteredGroups.map(group => {
+      const groupId = group.id || group.phone;
+      const participantsCount = parseInt(String(group.participantsCount)) || 0;
+      
+      return prisma.grupo.upsert({
         where: { grupo_id_zapi: groupId },
         update: {
           nome: group.name || 'Grupo sem nome',
           foto_url: group.image || group.thumbnail || null,
-          total_participantes: group.participantsCount || 0,
+          total_participantes: participantsCount,
           sincronizado_em: new Date(),
+          ativo: true 
         },
         create: {
           grupo_id_zapi: groupId,
           nome: group.name || 'Grupo sem nome',
           foto_url: group.image || group.thumbnail || null,
-          total_participantes: group.participantsCount || 0,
+          total_participantes: participantsCount,
+          ativo: true
         }
       });
     });
 
     await Promise.all(syncPromises);
 
+    // 3. Remover ou desativar o que não é mais um grupo válido
+    const seteDiasAtras = new Date();
+    seteDiasAtras.setDate(seteDiasAtras.getDate() - 7);
+
+    // Se temos grupos retornados, desativamos os que não estão na lista
+    if (zapiGroupIds.length > 0) {
+      await prisma.grupo.updateMany({
+        where: {
+          grupo_id_zapi: { notIn: zapiGroupIds as string[] }
+        },
+        data: { ativo: false }
+      });
+    }
+
+    // Limpeza: Deletar definitivamente grupos que não são sincronizados há mais de 7 dias
+    const deleted = await prisma.grupo.deleteMany({
+      where: {
+        sincronizado_em: { lt: seteDiasAtras }
+      }
+    });
+
     return res.json({
       success: true,
-      message: `${groups.length} grupos sincronizados com sucesso`
+      message: `${groups.length} grupos sincronizados. ${deleted.count} grupos antigos removidos por expiração (7 dias).`
     });
   } catch (error: any) {
     return res.status(500).json({

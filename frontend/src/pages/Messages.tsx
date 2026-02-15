@@ -172,7 +172,7 @@ const Messages: React.FC = () => {
 
   return (
     <div className="space-y-6">
-      <div className="flex justify-between items-center">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <h1 className="text-2xl font-bold text-gray-800">Mensagens</h1>
         <button 
           onClick={() => {
@@ -181,7 +181,7 @@ const Messages: React.FC = () => {
             setConteudo('');
             setIsModalOpen(true);
           }}
-          className="bg-blue-600 text-white px-4 py-2 rounded-lg flex items-center gap-2 hover:bg-blue-700 transition-colors"
+          className="w-full sm:w-auto bg-blue-600 text-white px-4 py-2 rounded-lg flex items-center justify-center gap-2 hover:bg-blue-700 transition-colors"
         >
           <Plus size={20} />
           Nova Mensagem
@@ -209,8 +209,8 @@ const Messages: React.FC = () => {
           ) : (
             messages.map((msg) => (
               <div key={msg.id} className="p-4 hover:bg-gray-50 flex items-center justify-between group">
-                <div className="flex items-center gap-4">
-                  <div className={`p-2 rounded-lg ${msg.midias && msg.midias.length > 0 ? 'bg-gray-100' : 'bg-blue-50 text-blue-600'}`}>
+                <div className="flex items-center gap-4 overflow-hidden">
+                  <div className={`shrink-0 p-2 rounded-lg ${msg.midias && msg.midias.length > 0 ? 'bg-gray-100' : 'bg-blue-50 text-blue-600'}`}>
                     {msg.midias && msg.midias.length > 0 ? (
                       msg.midias[0].tipo === 'image' ? <ImageIcon size={20} className="text-green-600" /> :
                       msg.midias[0].tipo === 'video' ? <Film size={20} className="text-purple-600" /> :
@@ -220,8 +220,8 @@ const Messages: React.FC = () => {
                       <MessageSquare size={20} />
                     )}
                   </div>
-                  <div>
-                    <h3 className="font-semibold text-gray-800">{msg.titulo}</h3>
+                  <div className="overflow-hidden">
+                    <h3 className="font-semibold text-gray-800 truncate">{msg.titulo}</h3>
                     <p className="text-sm text-gray-500 line-clamp-1">
                       {msg.midias && msg.midias.length > 0 && (
                         <span className="text-xs font-medium bg-gray-100 px-1.5 py-0.5 rounded mr-2 uppercase">
@@ -232,7 +232,7 @@ const Messages: React.FC = () => {
                     </p>
                   </div>
                 </div>
-                <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                <div className="flex items-center gap-2 lg:opacity-0 lg:group-hover:opacity-100 transition-opacity">
                   <button 
                     onClick={() => handleEdit(msg)}
                     className="p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg"
@@ -255,8 +255,8 @@ const Messages: React.FC = () => {
       {/* Modal de Criação/Edição */}
       {isModalOpen && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-xl shadow-xl w-full max-w-2xl overflow-hidden">
-            <div className="p-6 border-b">
+          <div className="bg-white rounded-xl shadow-xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
+            <div className="p-6 border-b sticky top-0 bg-white z-10">
               <h2 className="text-xl font-bold text-gray-800">
                 {editingId ? 'Editar Mensagem' : 'Nova Mensagem'}
               </h2>

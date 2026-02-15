@@ -54,6 +54,7 @@ model Grupo {
   id                    String    @id @default(uuid())
   grupo_id_zapi         String    @unique
   nome                  String
+  tipo                  String?   @default("grupo") // grupo, comunidade, canal
   foto_url              String?
   descricao             String?
   total_participantes   Int       @default(0)
@@ -84,9 +85,23 @@ model Mensagem {
   
   // Relações
   midias              Midia[]
-  campanhas           Campanha[]
+  campanhas_mensagens CampanhaMensagem[]
   
   @@map("mensagens")
+}
+
+model CampanhaMensagem {
+  id              String    @id @default(uuid())
+  campanha_id     String
+  mensagem_id     String
+  ordem           Int       @default(0) // Para manter uma ordem se desejar
+  
+  campanha        Campanha  @relation(fields: [campanha_id], references: [id], onDelete: Cascade)
+  mensagem        Mensagem  @relation(fields: [mensagem_id], references: [id], onDelete: Cascade)
+
+  @@unique([campanha_id, mensagem_id])
+  @@index([campanha_id])
+  @@map("campanhas_mensagens")
 }
 
 model Midia {
@@ -113,7 +128,6 @@ model Midia {
 model Campanha {
   id                    String    @id @default(uuid())
   nome                  String
-  mensagem_id           String? 
   status                String    @default("rascunho") // rascunho, agendada, em_andamento, concluida, cancelada, pausada
   total_grupos          Int       @default(0)
   grupos_processados    Int       @default(0)
@@ -127,7 +141,7 @@ model Campanha {
   atualizado_em         DateTime  @updatedAt
   
   // Relações
-  mensagem              Mensagem?       @relation(fields: [mensagem_id], references: [id], onDelete: SetNull)
+  campanhas_mensagens   CampanhaMensagem[]
   campanhas_grupos      CampanhaGrupo[]
   log_erros             LogErro[]
   
@@ -142,6 +156,8 @@ model CampanhaGrupo {
   status          String    @default("pendente") // pendente, enviado, erro, agendado
   erro_mensagem   String?
   enviado_em      DateTime? 
+  processado_em   DateTime? 
+  erro_em         DateTime?
   criado_em       DateTime  @default(now())
   
   // Relações
@@ -150,6 +166,7 @@ model CampanhaGrupo {
   
   @@unique([campanha_id, grupo_id])
   @@index([campanha_id])
+  @@index([status])
   @@map("campanhas_grupos")
 }
 

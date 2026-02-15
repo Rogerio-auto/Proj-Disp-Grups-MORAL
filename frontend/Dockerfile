@@ -13,6 +13,7 @@ COPY --from=build-stage /app/dist /usr/share/nginx/html
 # Configuração de Proxy Reverso para a API e suporte a SPA
 RUN echo 'server { \
     listen 80; \
+    client_max_body_size 50M; \
     location / { \
         root /usr/share/nginx/html; \
         index index.html; \
@@ -24,7 +25,14 @@ RUN echo 'server { \
         proxy_set_header Upgrade $http_upgrade; \
         proxy_set_header Connection "upgrade"; \
         proxy_set_header Host $host; \
+        proxy_set_header X-Real-IP $remote_addr; \
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for; \
         proxy_cache_bypass $http_upgrade; \
+    } \
+    location /uploads/ { \
+        proxy_pass http://api:3002/uploads/; \
+        proxy_http_version 1.1; \
+        proxy_set_header Host $host; \
     } \
 }' > /etc/nginx/conf.d/default.conf
 
