@@ -31,9 +31,10 @@ const Campaigns: React.FC = () => {
   const fetchCampaigns = async () => {
     try {
       const response = await api.get('/campanhas');
-      setCampaigns(response.data.data);
+      setCampaigns(response.data.data || []);
     } catch (error) {
       console.error('Erro ao buscar campanhas:', error);
+      setCampaigns([]);
     } finally {
       setLoading(false);
     }

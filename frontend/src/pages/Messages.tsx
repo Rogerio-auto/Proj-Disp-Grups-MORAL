@@ -38,9 +38,10 @@ const Messages: React.FC = () => {
   const fetchMessages = async () => {
     try {
       const response = await api.get('/mensagens');
-      setMessages(response.data.data);
+      setMessages(response.data.data || []);
     } catch (error) {
       console.error('Erro ao buscar mensagens:', error);
+      setMessages([]);
     } finally {
       setLoading(false);
     }

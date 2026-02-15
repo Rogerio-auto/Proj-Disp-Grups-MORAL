@@ -204,10 +204,10 @@ const CampaignDetails: React.FC = () => {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-100">
-                  {campaign.campanhas_grupos.map((cg) => (
+                  {campaign.campanhas_grupos?.map((cg) => (
                     <tr key={cg.id} className="hover:bg-gray-50 transition-colors">
-                      <td className="px-6 py-4 font-medium text-gray-800">{cg.grupo.nome}</td>
-                      <td className="px-6 py-4 text-sm text-gray-500">{cg.grupo.grupo_id_zapi}</td>
+                      <td className="px-6 py-4 font-medium text-gray-800">{cg.grupo?.nome || 'Grupo Removido'}</td>
+                      <td className="px-6 py-4 text-sm text-gray-500">{cg.grupo?.grupo_id_zapi || '-'}</td>
                       <td className="px-6 py-4">
                         <span className="px-2 py-1 rounded-full text-[10px] font-bold bg-gray-100 text-gray-500 uppercase">
                           {cg.status}
@@ -215,6 +215,13 @@ const CampaignDetails: React.FC = () => {
                       </td>
                     </tr>
                   ))}
+                  {(!campaign.campanhas_grupos || campaign.campanhas_grupos.length === 0) && (
+                    <tr>
+                      <td colSpan={3} className="px-6 py-8 text-center text-gray-500 italic">
+                        Nenhum grupo vinculado a esta campanha.
+                      </td>
+                    </tr>
+                  )}
                 </tbody>
               </table>
             </div>

@@ -27,9 +27,10 @@ const Groups: React.FC = () => {
       const response = await api.get('/grupos', {
         params: { search }
       });
-      setGroups(response.data.data);
+      setGroups(response.data.data || []);
     } catch (error) {
       console.error('Erro ao buscar grupos:', error);
+      setGroups([]);
     } finally {
       setLoading(false);
     }

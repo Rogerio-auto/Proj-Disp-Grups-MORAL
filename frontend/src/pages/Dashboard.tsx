@@ -28,6 +28,7 @@ const Dashboard: React.FC = () => {
       setData(response.data.data);
     } catch (error) {
       console.error('Erro ao buscar dados do dashboard:', error);
+      setData(null);
     } finally {
       setLoading(false);
     }
@@ -73,7 +74,7 @@ const Dashboard: React.FC = () => {
                     <p className="font-medium text-gray-800">{item.nome}</p>
                     <p className="text-xs text-gray-500">
                       Mensagem: {item.campanhas_mensagens?.[0]?.mensagem?.titulo || 'Nenhuma'}
-                      {item.campanhas_mensagens?.length > 1 && ` (+${item.campanhas_mensagens.length - 1} rascunhos)`}
+                      {(item.campanhas_mensagens?.length || 0) > 1 && ` (+${item.campanhas_mensagens.length - 1} rascunhos)`}
                     </p>
                   </div>
                 </div>
