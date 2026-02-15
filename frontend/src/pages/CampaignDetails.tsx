@@ -164,10 +164,10 @@ const CampaignDetails: React.FC = () => {
           <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
             <h2 className="text-lg font-semibold mb-4 flex items-center gap-2">
               <MessageSquare size={20} className="text-blue-600" />
-              Mensagens do Rodízio ({campaign.campanhas_mensagens.length})
+              Mensagens do Rodízio ({campaign.campanhas_mensagens?.length || 0})
             </h2>
             <div className="space-y-4">
-              {campaign.campanhas_mensagens.length > 0 ? (
+              {campaign.campanhas_mensagens?.length > 0 ? (
                 campaign.campanhas_mensagens.map((cm, idx) => (
                   <div key={cm.mensagem.id} className="bg-gray-50 p-4 rounded-lg border">
                     <div className="flex justify-between items-start mb-2">
@@ -191,7 +191,7 @@ const CampaignDetails: React.FC = () => {
             <div className="p-6 border-b">
               <h2 className="text-lg font-semibold flex items-center gap-2">
                 <Users size={20} className="text-blue-600" />
-                Grupos Destinatários ({campaign.campanhas_grupos.length})
+                Grupos Destinatários ({campaign.campanhas_grupos?.length || 0})
               </h2>
             </div>
             <div className="overflow-x-auto">

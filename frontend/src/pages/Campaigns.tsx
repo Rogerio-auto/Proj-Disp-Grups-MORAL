@@ -110,9 +110,9 @@ const Campaigns: React.FC = () => {
                     <p className="text-sm text-gray-500 flex items-center gap-1 mt-1">
                       <Eye size={14} /> 
                       {campaign.campanhas_mensagens?.[0]?.mensagem?.titulo || 'Sem mensagem'}
-                      {campaign.campanhas_mensagens?.length > 1 && (
+                      {(campaign.campanhas_mensagens?.length || 0) > 1 && (
                         <span className="text-[10px] bg-blue-50 text-blue-600 px-1 rounded ml-1">
-                          +{campaign.campanhas_mensagens.length - 1} rascunhos
+                          +{(campaign.campanhas_mensagens?.length || 0) - 1} rascunhos
                         </span>
                       )}
                     </p>
@@ -129,7 +129,7 @@ const Campaigns: React.FC = () => {
                     <div className="w-full bg-gray-100 rounded-full h-2">
                       <div 
                         className="bg-blue-600 h-2 rounded-full transition-all duration-500" 
-                        style={{ width: `${(campaign.grupos_processados / campaign.total_grupos) * 100}%` }}
+                        style={{ width: `${campaign.total_grupos > 0 ? (campaign.grupos_processados / campaign.total_grupos) * 100 : 0}%` }}
                       ></div>
                     </div>
                   </div>
