@@ -67,12 +67,12 @@ const CreateCampaign: React.FC = () => {
       const response = await api.get(`/campanhas/${id}`);
       const campaign = response.data.data;
       setFormData({
-        nome: campaign.nome,
+        nome: campaign.nome || '',
         mensagem_id: campaign.mensagem_id || '',
         mensagens_ids: campaign.campanhas_mensagens?.map((cm: any) => cm.mensagem_id) || (campaign.mensagem_id ? [campaign.mensagem_id] : []),
-        grupos_ids: campaign.campanhas_grupos.map((cg: any) => cg.grupo_id),
-        intervalo_segundos: campaign.intervalo_segundos,
-        tipo_disparo: campaign.tipo_disparo,
+        grupos_ids: campaign.campanhas_grupos?.map((cg: any) => cg.grupo_id) || [],
+        intervalo_segundos: campaign.intervalo_segundos || 30,
+        tipo_disparo: campaign.tipo_disparo || 'imediato',
         agendada_para: campaign.agendada_para ? campaign.agendada_para.substring(0, 16) : '',
       });
     } catch (error) {
