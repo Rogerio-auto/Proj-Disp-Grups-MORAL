@@ -155,7 +155,6 @@ export const getCampaignDetails = async (req: Request, res: Response) => {
     const campanha = await prisma.campanha.findUnique({
       where: { id },
       include: {
-        mensagem: true,
         campanhas_mensagens: {
           include: {
             mensagem: {

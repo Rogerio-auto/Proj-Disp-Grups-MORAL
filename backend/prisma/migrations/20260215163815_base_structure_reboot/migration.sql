@@ -30,6 +30,7 @@ CREATE TABLE "grupos" (
     "id" TEXT NOT NULL,
     "grupo_id_zapi" TEXT NOT NULL,
     "nome" TEXT NOT NULL,
+    "tipo" TEXT DEFAULT 'grupo',
     "foto_url" TEXT,
     "descricao" TEXT,
     "total_participantes" INTEGER NOT NULL DEFAULT 0,
@@ -55,6 +56,16 @@ CREATE TABLE "mensagens" (
 );
 
 -- CreateTable
+CREATE TABLE "campanhas_mensagens" (
+    "id" TEXT NOT NULL,
+    "campanha_id" TEXT NOT NULL,
+    "mensagem_id" TEXT NOT NULL,
+    "ordem" INTEGER NOT NULL DEFAULT 0,
+
+    CONSTRAINT "campanhas_mensagens_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
 CREATE TABLE "midias" (
     "id" TEXT NOT NULL,
     "mensagem_id" TEXT NOT NULL,
@@ -72,7 +83,6 @@ CREATE TABLE "midias" (
 CREATE TABLE "campanhas" (
     "id" TEXT NOT NULL,
     "nome" TEXT NOT NULL,
-    "mensagem_id" TEXT,
     "status" TEXT NOT NULL DEFAULT 'rascunho',
     "total_grupos" INTEGER NOT NULL DEFAULT 0,
     "grupos_processados" INTEGER NOT NULL DEFAULT 0,
@@ -96,6 +106,8 @@ CREATE TABLE "campanhas_grupos" (
     "status" TEXT NOT NULL DEFAULT 'pendente',
     "erro_mensagem" TEXT,
     "enviado_em" TIMESTAMP(3),
+    "processado_em" TIMESTAMP(3),
+    "erro_em" TIMESTAMP(3),
     "criado_em" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
     CONSTRAINT "campanhas_grupos_pkey" PRIMARY KEY ("id")
@@ -174,6 +186,12 @@ CREATE UNIQUE INDEX "grupos_grupo_id_zapi_key" ON "grupos"("grupo_id_zapi");
 CREATE INDEX "grupos_ativo_idx" ON "grupos"("ativo");
 
 -- CreateIndex
+CREATE INDEX "campanhas_mensagens_campanha_id_idx" ON "campanhas_mensagens"("campanha_id");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "campanhas_mensagens_campanha_id_mensagem_id_key" ON "campanhas_mensagens"("campanha_id", "mensagem_id");
+
+-- CreateIndex
 CREATE INDEX "midias_mensagem_id_idx" ON "midias"("mensagem_id");
 
 -- CreateIndex
@@ -181,6 +199,9 @@ CREATE INDEX "campanhas_status_idx" ON "campanhas"("status");
 
 -- CreateIndex
 CREATE INDEX "campanhas_grupos_campanha_id_idx" ON "campanhas_grupos"("campanha_id");
+
+-- CreateIndex
+CREATE INDEX "campanhas_grupos_status_idx" ON "campanhas_grupos"("status");
 
 -- CreateIndex
 CREATE UNIQUE INDEX "campanhas_grupos_campanha_id_grupo_id_key" ON "campanhas_grupos"("campanha_id", "grupo_id");
@@ -201,10 +222,13 @@ CREATE UNIQUE INDEX "estatisticas_campanhas_campanha_id_key" ON "estatisticas_ca
 ALTER TABLE "sessoes_ativas" ADD CONSTRAINT "sessoes_ativas_usuario_id_fkey" FOREIGN KEY ("usuario_id") REFERENCES "usuarios"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "midias" ADD CONSTRAINT "midias_mensagem_id_fkey" FOREIGN KEY ("mensagem_id") REFERENCES "mensagens"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE "campanhas_mensagens" ADD CONSTRAINT "campanhas_mensagens_campanha_id_fkey" FOREIGN KEY ("campanha_id") REFERENCES "campanhas"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "campanhas" ADD CONSTRAINT "campanhas_mensagem_id_fkey" FOREIGN KEY ("mensagem_id") REFERENCES "mensagens"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+ALTER TABLE "campanhas_mensagens" ADD CONSTRAINT "campanhas_mensagens_mensagem_id_fkey" FOREIGN KEY ("mensagem_id") REFERENCES "mensagens"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "midias" ADD CONSTRAINT "midias_mensagem_id_fkey" FOREIGN KEY ("mensagem_id") REFERENCES "mensagens"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "campanhas_grupos" ADD CONSTRAINT "campanhas_grupos_campanha_id_fkey" FOREIGN KEY ("campanha_id") REFERENCES "campanhas"("id") ON DELETE CASCADE ON UPDATE CASCADE;

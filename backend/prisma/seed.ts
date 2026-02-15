@@ -8,6 +8,9 @@ async function main() {
   const adminPassword = process.env.ADMIN_PASSWORD || 'admin123';
   const adminName = process.env.ADMIN_NAME || 'Administrador';
 
+  console.log('🌱 Iniciando seed do banco de dados...');
+  console.log(`📧 Email do admin: ${adminEmail}`);
+
   // Criar usuário admin padrão
   const senhaHash = await bcrypt.hash(adminPassword, 10);
   
@@ -15,7 +18,9 @@ async function main() {
     where: { email: adminEmail },
     update: {
       senha_hash: senhaHash,
-      nome: adminName
+      nome: adminName,
+      papel: 'admin',
+      ativo: true
     },
     create: {
       email: adminEmail,
@@ -26,12 +31,13 @@ async function main() {
     }
   });
   
-  console.log('Seed completo. Usuário:', adminEmail);
+  console.log('✅ Seed completo! Usuário admin criado/atualizado:', adminEmail);
+  console.log(`🔑 Use a senha definida na env ADMIN_PASSWORD para fazer login.`);
 }
 
 main()
   .catch((e) => {
-    console.error(e);
+    console.error('❌ Erro no seed:', e);
     process.exit(1);
   })
   .finally(async () => {

@@ -3,6 +3,7 @@ import cors from 'cors';
 import dotenv from 'dotenv';
 import path from 'path';
 import { PrismaClient } from '@prisma/client';
+import { ensureAdminExists } from './utils/ensure-admin';
 
 dotenv.config();
 
@@ -44,8 +45,18 @@ app.get('/health', (req, res) => {
 
 // Routes will be added here
 
-app.listen(PORT, () => {
-  console.log(`Server is running on port ${PORT}`);
+// Initialize server with admin check
+async function startServer() {
+  await ensureAdminExists();
+  
+  app.listen(PORT, () => {
+    console.log(`Server is running on port ${PORT}`);
+  });
+}
+
+startServer().catch((error) => {
+  console.error('Failed to start server:', error);
+  process.exit(1);
 });
 
 export { app, prisma };
